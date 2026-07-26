@@ -24,7 +24,15 @@ export default function JourneyDetailPage() {
     <div className="dashboard-page journey-detail">
       <div className="detail-header">
         <Link href="/dashboard/search" className="btn-back">← Back to Search</Link>
-        <h1>Journey: {customerId}</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+          <h1>Journey: {customerId}</h1>
+          <Link 
+            href={`/dashboard/graph?customer_id=${customerId}`}
+            style={{ padding: '0.6rem 1.2rem', background: '#3b82f6', color: '#fff', textDecoration: 'none', borderRadius: '8px', fontWeight: 500 }}
+          >
+            View Identity Graph
+          </Link>
+        </div>
       </div>
 
       <div className="analytics-summary">

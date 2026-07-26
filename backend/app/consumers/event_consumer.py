@@ -57,18 +57,18 @@ def run() -> None:
 
     normalizer = EventNormalizationService()
     
-    # Initialize the identity graph (in-memory for this phase)
-    identity_graph = IdentityGraph()
+    # Initialize MongoDB Persistence
+    mongo_client = MongoDBClient()
+    db = mongo_client.connect()
+    event_repo = EventRepository(db)
+
+    # Initialize the identity graph with MongoDB
+    identity_graph = IdentityGraph(db)
     identity_engine = IdentityResolutionEngine(identity_graph)
 
     # Initialize the journey stitching engine
     journey_repo = FileBasedJourneyRepository()
     stitching_engine = JourneyStitchingEngine(journey_repo)
-    
-    # Initialize MongoDB Persistence
-    mongo_client = MongoDBClient()
-    db = mongo_client.connect()
-    event_repo = EventRepository(db)
 
     try:
         for message in consumer:

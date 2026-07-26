@@ -16,6 +16,7 @@ class JourneyEvent(BaseModel):
     event_type: str
     metadata: dict[str, Any] = Field(default_factory=dict)
     confidence_score: float
+    explanation: list[str] = Field(default_factory=list, description="Reasoning for identity resolution")
 
     # For chronological ordering and deduplication
     def __hash__(self) -> int:

@@ -33,7 +33,8 @@ class JourneyStitchingEngine:
             source=canonical.source,
             event_type=canonical.event_type,
             metadata=canonical.metadata,
-            confidence_score=resolved_event.confidence_score
+            confidence_score=resolved_event.confidence_score,
+            explanation=resolved_event.explanation
         )
 
         # 2. Retrieve existing journey or create a new one

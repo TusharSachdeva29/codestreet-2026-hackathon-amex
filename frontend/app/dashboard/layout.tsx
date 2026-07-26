@@ -15,6 +15,7 @@ export default function DashboardLayout({
         <ul className="sidebar-nav">
           <li><Link href="/dashboard">Overview</Link></li>
           <li><Link href="/dashboard/search">Customer Search</Link></li>
+          <li><Link href="/dashboard/graph">Identity Graph</Link></li>
           <li><Link href="/dashboard/feed">Live Event Feed</Link></li>
           <li><Link href="/dashboard/system">System Status</Link></li>
         </ul>

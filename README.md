@@ -4,18 +4,19 @@ Repository scaffold for an event-driven, microservice-inspired platform.
 
 ## Status
 
-Phase 1 event simulator in progress.
+Phase 2 event streaming ready.
 
 ## Scope Included
 
 - Four channel simulators in the frontend
 - Backend API for receiving simulated events
+- Kafka producer integration in the backend
+- Kafka consumer for structured event logging
 - Shared event schema for simulator requests
 - Documentation scaffolding and project context
 
 ## Scope Excluded
 
-- Kafka integration
 - Database setup
 - Identity resolution
 - Event stitching
@@ -29,18 +30,49 @@ Phase 1 event simulator in progress.
 - `docs/` documentation placeholders
 - `sample-data/` local sample payload placeholders
 
-## Phase 1 Flow
+## Phase 2 Flow
 
 Simulator page
 -> backend API
+-> Kafka producer
+-> Kafka topic
+-> Kafka consumer
+-> application log
+
+## Kafka Topics
+
+- `web-events`
+- `mobile-events`
+- `callcentre-events`
+- `store-events`
 
 ## Local Run
+
+### Kafka
+
+```powershell
+docker compose up -d kafka
+```
+
+### Topic Bootstrap
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m app.streaming.bootstrap_topics
+```
 
 ### Backend
 
 ```powershell
 cd backend
-uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```
+
+### Consumer
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m app.consumers.event_consumer
 ```
 
 ### Frontend
@@ -55,4 +87,4 @@ The frontend expects the backend at `http://localhost:8000` by default. Override
 
 ## Next Steps
 
-Add Kafka producer integration in the next phase without changing simulator behavior.
+Introduce event normalization on top of the Kafka consumer flow in the next phase.

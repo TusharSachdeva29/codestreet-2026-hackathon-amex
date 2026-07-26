@@ -38,4 +38,7 @@ class EventIngestResponse(BaseModel):
 
     accepted: bool
     event_id: UUID
+    topic: str
+    partition: int
+    offset: int
     message: str

@@ -32,7 +32,7 @@ If customer data is siloed across channels such as app, website, and phone, it b
 
 Unified journey visibility enables teams to find and fix the exact moments where the experience fails.
 
-## Reference Tech Stack
+## Reference Tech Stack & Frameworks
 
 The stack remains flexible, but the project is informed by the following reference technologies:
 

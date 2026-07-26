@@ -11,6 +11,8 @@ from app.core.config import get_settings
 from app.normalization.service import EventNormalizationService
 from app.identity.graph import IdentityGraph
 from app.identity.engine import IdentityResolutionEngine
+from app.stitching.repository import FileBasedJourneyRepository
+from app.stitching.engine import JourneyStitchingEngine
 
 logger = logging.getLogger("app.consumers.event_consumer")
 
@@ -57,6 +59,10 @@ def run() -> None:
     identity_graph = IdentityGraph()
     identity_engine = IdentityResolutionEngine(identity_graph)
 
+    # Initialize the journey stitching engine
+    journey_repo = FileBasedJourneyRepository()
+    stitching_engine = JourneyStitchingEngine(journey_repo)
+
     try:
         for message in consumer:
             raw_payload = message.value
@@ -66,18 +72,17 @@ def run() -> None:
                 # Resolve the identity of the event
                 resolved_event = identity_engine.resolve(canonical)
 
+                # Stitch into the customer's journey
+                journey = stitching_engine.stitch(resolved_event)
+
                 logger.info(
                     json.dumps(
                         {
-                            "event": "identity_resolved",
+                            "event": "journey_stitched",
                             "topic": message.topic,
-                            "partition": message.partition,
-                            "offset": message.offset,
-                            "key": message.key,
                             "canonical_event_id": str(canonical.event_id),
                             "resolved_customer_id": resolved_event.resolved_customer_id,
-                            "confidence": resolved_event.confidence_score,
-                            "resolved_event_payload": json.loads(resolved_event.model_dump_json()),
+                            "journey_length": len(journey.events),
                         }
                     )
                 )

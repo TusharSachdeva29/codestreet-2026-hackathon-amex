@@ -22,6 +22,7 @@ export default function IdentityGraphPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [stats, setStats] = useState({ total_nodes: 0, total_edges: 0 });
   const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [selectedEdge, setSelectedEdge] = useState<any>(null);
   const [searchId, setSearchId] = useState(customerId);
   const [loading, setLoading] = useState(true);
 
@@ -35,25 +36,53 @@ export default function IdentityGraphPage() {
       const res = await fetch(url);
       const data = await res.json();
       
-      // Compute simple radial/grid layout
-      const formattedNodes = data.nodes.map((n: any, i: number) => {
-        const radius = cId ? 150 : 300;
-        const angle = (i / data.nodes.length) * 2 * Math.PI;
-        return {
-          ...n,
-          position: {
-            x: Math.cos(angle) * radius + 400,
-            y: Math.sin(angle) * radius + 300
-          },
-          style: {
-            background: '#1e293b',
-            color: '#fff',
-            border: '1px solid #3b82f6',
-            borderRadius: '8px',
-            padding: '10px',
-            fontSize: '12px'
-          }
-        };
+      // Group nodes by customer_id to create distinct clusters visually
+      const clusterMap: Record<string, any[]> = {};
+      data.nodes.forEach((n: any) => {
+        const cId = n.data.customer_id || 'unknown';
+        if (!clusterMap[cId]) clusterMap[cId] = [];
+        clusterMap[cId].push(n);
+      });
+
+      const clusterIds = Object.keys(clusterMap);
+      const formattedNodes: any[] = [];
+      
+      // We will place each cluster in a grid
+      const cols = Math.ceil(Math.sqrt(clusterIds.length)) || 1;
+      const xSpacing = 500;
+      const ySpacing = 500;
+
+      clusterIds.forEach((clusterId, clusterIndex) => {
+        const clusterNodes = clusterMap[clusterId];
+        // Cluster center
+        const row = Math.floor(clusterIndex / cols);
+        const col = clusterIndex % cols;
+        const cx = col * xSpacing + 400;
+        const cy = row * ySpacing + 300;
+        
+        // Layout nodes in this cluster as a small circle
+        const radius = clusterNodes.length > 1 ? 120 : 0;
+        
+        clusterNodes.forEach((n: any, i: number) => {
+          const angle = (i / clusterNodes.length) * 2 * Math.PI;
+          formattedNodes.push({
+            ...n,
+            position: {
+              x: cx + Math.cos(angle) * radius,
+              y: cy + Math.sin(angle) * radius
+            },
+            style: {
+              background: '#1e293b',
+              color: '#fff',
+              border: '1px solid #3b82f6',
+              borderRadius: '8px',
+              padding: '10px',
+              fontSize: '12px',
+              minWidth: '100px',
+              textAlign: 'center'
+            }
+          });
+        });
       });
 
       const formattedEdges = data.edges.map((e: any) => ({
@@ -87,6 +116,12 @@ export default function IdentityGraphPage() {
 
   const onNodeClick = (event: any, node: any) => {
     setSelectedNode(node);
+    setSelectedEdge(null);
+  };
+
+  const onEdgeClick = (event: any, edge: any) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
   };
 
   return (
@@ -124,6 +159,7 @@ export default function IdentityGraphPage() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={onNodeClick}
+            onEdgeClick={onEdgeClick}
             fitView
             attributionPosition="bottom-right"
           >
@@ -150,8 +186,62 @@ export default function IdentityGraphPage() {
               <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Match Confidence</label>
               <div style={{ fontSize: '1.1rem', marginTop: '0.2rem', color: '#10b981' }}>See Edge Labels</div>
             </div>
+            
+            {selectedNode.data.first_seen && (
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>First Seen</label>
+                <div style={{ fontSize: '0.9rem', marginTop: '0.2rem', color: '#e2e8f0' }}>{new Date(selectedNode.data.first_seen).toLocaleString()}</div>
+              </div>
+            )}
+            
+            {selectedNode.data.last_seen && (
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Last Seen</label>
+                <div style={{ fontSize: '0.9rem', marginTop: '0.2rem', color: '#e2e8f0' }}>{new Date(selectedNode.data.last_seen).toLocaleString()}</div>
+              </div>
+            )}
+            
             <div style={{ marginTop: '2rem' }}>
               <button onClick={() => setSelectedNode(null)} style={{ padding: '0.5rem 1rem', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', width: '100%' }}>
+                Close Panel
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {selectedEdge && (
+          <div style={{ width: '300px', background: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', padding: '1.5rem', color: '#e2e8f0', overflowY: 'auto' }}>
+            <h3 style={{ marginBottom: '1.5rem', color: '#fff', borderBottom: '1px solid #1e293b', paddingBottom: '0.5rem' }}>Edge Details</h3>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Confidence Score</label>
+              <div style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: selectedEdge.data.confidence >= 0.95 ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
+                {selectedEdge.data.confidence.toFixed(2)}
+              </div>
+            </div>
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Evidence / Rules Applied</label>
+              <ul style={{ marginTop: '0.5rem', paddingLeft: '1.2rem', fontSize: '0.9rem', color: '#cbd5e1' }}>
+                {selectedEdge.data.evidence && selectedEdge.data.evidence.length > 0 ? (
+                  selectedEdge.data.evidence.map((ev: string, i: number) => (
+                    <li key={i} style={{ marginBottom: '0.3rem' }}>{ev}</li>
+                  ))
+                ) : (
+                  <li>No evidence recorded</li>
+                )}
+              </ul>
+            </div>
+            
+            {selectedEdge.data.created_at && (
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Created At</label>
+                <div style={{ fontSize: '0.9rem', marginTop: '0.2rem', color: '#94a3b8' }}>{new Date(selectedEdge.data.created_at).toLocaleString()}</div>
+              </div>
+            )}
+            
+            <div style={{ marginTop: '2rem' }}>
+              <button onClick={() => setSelectedEdge(null)} style={{ padding: '0.5rem 1rem', background: '#334155', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', width: '100%' }}>
                 Close Panel
               </button>
             </div>

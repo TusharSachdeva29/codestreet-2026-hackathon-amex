@@ -11,6 +11,9 @@ type FormState = {
   cardLast4: string;
   deviceId: string;
   sessionId: string;
+  cookieId: string;
+  ipAddress: string;
+  browserFingerprint: string;
   metadataValue: string;
 };
 
@@ -31,6 +34,9 @@ const initialFormState: FormState = {
   cardLast4: "",
   deviceId: "",
   sessionId: "",
+  cookieId: "",
+  ipAddress: "",
+  browserFingerprint: "",
   metadataValue: ""
 };
 
@@ -63,7 +69,10 @@ export function SimulatorPage({ channel }: SimulatorPageProps) {
         phone_number: formState.phoneNumber || null,
         card_last4: formState.cardLast4 || null,
         device_id: formState.deviceId || null,
-        session_id: formState.sessionId || null
+        session_id: formState.sessionId || null,
+        cookie_id: formState.cookieId || null,
+        ip_address: formState.ipAddress || null,
+        browser_fingerprint: formState.browserFingerprint || null
       },
       metadata: {
         action_label: selectedAction.label,
@@ -161,6 +170,18 @@ export function SimulatorPage({ channel }: SimulatorPageProps) {
             <label>
               Session ID
               <input value={formState.sessionId} onChange={(event) => updateField("sessionId", event.target.value)} />
+            </label>
+            <label>
+              Cookie ID
+              <input value={formState.cookieId} onChange={(event) => updateField("cookieId", event.target.value)} />
+            </label>
+            <label>
+              IP Address
+              <input value={formState.ipAddress} onChange={(event) => updateField("ipAddress", event.target.value)} />
+            </label>
+            <label>
+              Browser Fingerprint
+              <input value={formState.browserFingerprint} onChange={(event) => updateField("browserFingerprint", event.target.value)} />
             </label>
           </div>
 

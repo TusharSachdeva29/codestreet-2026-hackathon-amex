@@ -16,6 +16,9 @@ class NormalizedIdentity(BaseModel):
     device_id: str | None = None
     session_id: str | None = None
     card_last4: str | None = None
+    cookie_id: str | None = None
+    ip_address: str | None = None
+    browser_fingerprint: str | None = None
 
 
 class CanonicalEvent(BaseModel):

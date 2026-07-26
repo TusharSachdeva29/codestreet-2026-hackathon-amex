@@ -109,7 +109,13 @@ class IdentityGraph:
         for doc in self.nodes_col.find():
             nodes.append({
                 "id": doc["id"],
-                "data": {"label": doc["id_value"], "type": doc["id_type"]},
+                "data": {
+                    "label": doc["id_value"], 
+                    "type": doc["id_type"],
+                    "customer_id": doc.get("customer_id", ""),
+                    "first_seen": doc.get("first_seen", "").isoformat() if hasattr(doc.get("first_seen"), 'isoformat') else doc.get("first_seen"),
+                    "last_seen": doc.get("last_seen", "").isoformat() if hasattr(doc.get("last_seen"), 'isoformat') else doc.get("last_seen")
+                },
                 "type": "default"
             })
             
@@ -121,7 +127,11 @@ class IdentityGraph:
                 "target": doc["target"],
                 "label": f"{doc['confidence']:.2f}",
                 "animated": doc['confidence'] < 1.0,
-                "data": {"confidence": doc['confidence'], "evidence": doc['evidence']}
+                "data": {
+                    "confidence": doc['confidence'], 
+                    "evidence": doc['evidence'],
+                    "created_at": doc.get("created_at", "").isoformat() if hasattr(doc.get("created_at"), 'isoformat') else doc.get("created_at")
+                }
             })
             
         return {"nodes": nodes, "edges": edges}

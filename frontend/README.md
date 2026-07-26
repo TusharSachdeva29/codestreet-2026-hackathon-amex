@@ -1,9 +1,17 @@
 # Frontend
 
-Next.js App Router scaffold for operator and internal platform experiences.
+Next.js App Router frontend for Phase 1 simulator experiences.
 
-## Principles
+## Current Responsibility
 
-- Use the App Router structure
-- Keep UI scaffolding lightweight during setup
-- Add feature modules in later phases
+- Provide four independent simulator pages
+- Collect identity and metadata inputs
+- Send exactly one event per user action to the backend API
+
+## Routes
+
+- `/` simulator landing page
+- `/website`
+- `/mobile-app`
+- `/call-centre`
+- `/physical-store`

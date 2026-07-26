@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
   title: "AMEX Journey Stitching Platform",
-  description: "Project setup placeholder for the frontend application."
+  description: "Phase 1 simulator interface for generating cross-channel customer interaction events."
 };
 
 type RootLayoutProps = {
@@ -14,7 +14,9 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="app-frame">{children}</div>
+      </body>
     </html>
   );
 }

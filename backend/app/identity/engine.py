@@ -76,20 +76,17 @@ class IdentityResolutionEngine:
             return self._build_resolved_event(canonical, primary_customer, 1.0, explanation)
 
         # 3. Candidate Search & Probabilistic Matching
-        # No exact trusted match. Let's find candidates via probabilistic signals or fuzzy matching.
+        # No exact trusted match. Rely only on low-trust weighted signals.
         candidates = defaultdict(float)  # customer_id -> score
         evidence_map = defaultdict(list) # customer_id -> list of evidence strings
-        
-        # A. Fuzzy search on trusted identifiers (e.g. misspelled email)
-        for n in trusted_nodes:
-            existing_nodes = self.graph.get_nodes_by_type(n.id_type)
-            for e_node in existing_nodes:
-                ratio = difflib.SequenceMatcher(None, e_node.id_value.lower(), n.id_value.lower()).ratio()
-                if ratio >= 0.85:
-                    candidates[e_node.customer_id] += ratio
-                    evidence_map[e_node.customer_id].append(f"Fuzzy {n.id_type} Match (+{ratio:.2f})")
 
-        # B. Exact match on low-trust identifiers (Cookie, IP, Device)
+        # NOTE: We intentionally do NOT do fuzzy matching on trusted identifiers (email, phone).
+        # Two different people can have very similar emails (john.smith vs john.smth).
+        # Trusted identifiers either match exactly (deterministic) or don't match at all.
+
+        # Exact match on low-trust identifiers (Cookie, IP, Device, Fingerprint, Session)
+        # Track which customer owns each matched signal
+        signal_to_customer: dict[str, str] = {}  # node_id -> customer_id
         untrusted_nodes = [n for n in nodes if n.id_type not in TRUSTED_IDENTIFIERS]
         for n in untrusted_nodes:
             g_node = self.graph.get_node(n)
@@ -97,8 +94,10 @@ class IdentityResolutionEngine:
                 weight = WEIGHTS.get(n.id_type, 0.1)
                 candidates[g_node.customer_id] += weight
                 evidence_map[g_node.customer_id].append(f"Exact {n.id_type} Match (+{weight})")
-                
+                signal_to_customer[self.graph._get_node_id(n)] = g_node.customer_id
+
         # 4. Identity Decision Engine
+        # Find the best scoring candidate
         best_candidate = None
         best_score = 0.0
         for cid, score in candidates.items():
@@ -106,9 +105,35 @@ class IdentityResolutionEngine:
                 best_score = score
                 best_candidate = cid
 
+        # KEY FIX: Cross-cluster bridge detection.
+        # If signals point to MULTIPLE different customers and their combined score 
+        # is >= threshold, merge all weaker clusters into the best candidate.
+        all_matched_customers = set(candidates.keys())
+        total_combined_score = sum(candidates.values())
+
+        if best_candidate and len(all_matched_customers) > 1 and total_combined_score >= PROBABILISTIC_MERGE_THRESHOLD:
+            # Multiple clusters connected by this single event — merge them all
+            final_confidence = min(total_combined_score, 0.99)
+            combined_evidence = []
+            for cid in all_matched_customers:
+                combined_evidence.extend(evidence_map[cid])
+            combined_evidence = list(set(combined_evidence))  # deduplicate
+            combined_evidence.append(f"Cross-cluster bridge: merged {len(all_matched_customers)} clusters")
+
+            # Merge all other clusters into best_candidate
+            for other_cid in all_matched_customers - {best_candidate}:
+                self.graph.merge_customers(other_cid, best_candidate)
+                logger.info(f"Probabilistic bridge merge: {other_cid} → {best_candidate} (score={total_combined_score:.2f})")
+
+            for n in nodes:
+                self.graph.upsert_node(n, best_candidate)
+                if n != nodes[0]:
+                    self.graph.add_edge(nodes[0], n, confidence=final_confidence, evidence=combined_evidence)
+
+            return self._build_resolved_event(canonical, best_candidate, final_confidence, combined_evidence)
+
         if best_candidate and best_score >= PROBABILISTIC_MERGE_THRESHOLD:
-            # We have a probabilistic merge!
-            # Cap confidence at 0.99 for probabilistic
+            # Single-cluster probabilistic merge (signals all point to same customer)
             final_confidence = min(best_score, 0.99)
             
             for n in nodes:

@@ -27,6 +27,9 @@ class BaseEventMapper(abc.ABC):
             device_id=raw_identity.get("device_id"),
             session_id=raw_identity.get("session_id"),
             card_last4=raw_identity.get("card_last4"),
+            cookie_id=raw_identity.get("cookie_id"),
+            ip_address=raw_identity.get("ip_address"),
+            browser_fingerprint=raw_identity.get("browser_fingerprint"),
         )
 
 

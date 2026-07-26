@@ -13,6 +13,8 @@ from app.identity.graph import IdentityGraph
 from app.identity.engine import IdentityResolutionEngine
 from app.stitching.repository import FileBasedJourneyRepository
 from app.stitching.engine import JourneyStitchingEngine
+from app.core.db import MongoDBClient
+from app.persistence.repository import EventRepository
 
 logger = logging.getLogger("app.consumers.event_consumer")
 
@@ -62,6 +64,11 @@ def run() -> None:
     # Initialize the journey stitching engine
     journey_repo = FileBasedJourneyRepository()
     stitching_engine = JourneyStitchingEngine(journey_repo)
+    
+    # Initialize MongoDB Persistence
+    mongo_client = MongoDBClient()
+    db = mongo_client.connect()
+    event_repo = EventRepository(db)
 
     try:
         for message in consumer:
@@ -69,6 +76,9 @@ def run() -> None:
             canonical = normalizer.normalize(raw_payload)
             
             if canonical:
+                # Persist to MongoDB (Raw Canonical Events)
+                event_repo.save_event(canonical)
+                
                 # Resolve the identity of the event
                 resolved_event = identity_engine.resolve(canonical)
 
@@ -103,6 +113,7 @@ def run() -> None:
         logger.info(json.dumps({"event": "consumer_stopped"}))
     finally:
         consumer.close()
+        mongo_client.close()
 
 
 if __name__ == "__main__":

@@ -13,6 +13,21 @@ services:
     networks:
       - platform
 
+  mongodb:
+    image: mongo:7.0
+    container_name: amex-journey-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=journey_platform
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - platform
+
+volumes:
+  mongodb_data:
+
 networks:
   platform:
     name: amex-journey-platform
